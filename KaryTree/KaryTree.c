@@ -7,13 +7,13 @@
 #include "KaryTree.h"
 
 //////////////////////////////////////////////////
-KTN_t *createNode(int value, void *element) {
+KTN_t *createNode(int keyValue, void *element) {
     // Block illegal parameters.
     if (element == NULL) return NULL;
     
     KTN_t *node = malloc(sizeof(KTN_t));
     if (node == NULL) return NULL;
-    node->value = value;
+    node->keyValue = keyValue;
     node->element = element;
     node->numOfChild = 0;
     node->parent = NULL;
@@ -40,13 +40,13 @@ bool destroyKT(KTN_t *R, KT_OPTION_e option) {
     return true;
 }
 
-KTN_t *insertElementIntoKT(KTN_t *R, int K, int value, void *element) {
-    KTN_t *target = createNode(value, element);
+KTN_t *insertElementIntoKT(KTN_t *R, int K, int keyValue, void *element) {
+    KTN_t *target = createNode(keyValue, element);
     if (target == NULL) return NULL;
     if (R == NULL) return target;
     
     //　level-order traversal.
-    Queue_t *Q = createQueue();
+    QUEUE_t *Q = createQueue();
     enQueue(Q, R);
     while (!isEmptyQueue(Q)) {
         KTN_t *parent = deQueue(Q);
@@ -108,7 +108,7 @@ bool deleteElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
     }
     
     // change a value of target node. then delete a leftmost node.
-    target->value = leftmost->value;
+    target->keyValue = leftmost->keyValue;
     if (leftmost->parent != NULL) {
         leftmost->parent->numOfChild--;
         if (leftmost == target) {
@@ -141,7 +141,7 @@ bool deleteElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
 int findElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option) {
     KTN_t *findNode = findNodeOnKT(R, comp, element, option);
     if (findNode == NULL) return -1;
-    return findNode->value;
+    return findNode->keyValue;
 }
 
 KTN_t *findNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option) {
@@ -159,7 +159,7 @@ KTN_t *findNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTIO
 int breadthFirstFindElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
     KTN_t *findNode = breadthFirstFindNodeOnKT(R, comp, element);
     if (findNode == NULL) return -1;
-    return findNode->value;
+    return findNode->keyValue;
 }
 
 KTN_t *breadthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
@@ -167,7 +167,7 @@ KTN_t *breadthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *eleme
     if (R == NULL) return NULL;
     //　level-order traversal.
     KTN_t *findNode = NULL;
-    Queue_t *Q = createQueue();
+    QUEUE_t *Q = createQueue();
     enQueue(Q, R);
     while (!isEmptyQueue(Q)) {
         KTN_t * node = deQueue(Q);
@@ -189,7 +189,7 @@ KTN_t *breadthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *eleme
 int depthFirstFindElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
     KTN_t *findNode = depthFirstFindNodeOnKT(R, comp, element);
     if (findNode == NULL) return -1;
-    return findNode->value;
+    return findNode->keyValue;
 }
 
 KTN_t *depthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
@@ -207,11 +207,11 @@ KTN_t *depthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element
 }
 
 void levelOrderTraversalOnKT(KTN_t *R) {
-    Queue_t *Q = createQueue();
+    QUEUE_t *Q = createQueue();
     enQueue(Q, R);
     while (!isEmptyQueue(Q)) {
         KTN_t * node = deQueue(Q);
-        printf("level-order traversal : %d\n", node->value);
+        printf("level-order traversal : %d\n", node->keyValue);
         
         // enqueue all childs.
         KTN_t *child = node->child;
@@ -226,7 +226,7 @@ void levelOrderTraversalOnKT(KTN_t *R) {
 void preOrderTraversalOnKT(KTN_t *R) {
     if (R == NULL) return;
     
-    printf("pre-order traversal : %d\n", R->value);
+    printf("pre-order traversal : %d\n", R->keyValue);
     KTN_t *child = R->child;
     while (child != NULL) {
         preOrderTraversalOnKT(child);
@@ -242,5 +242,5 @@ void postOrderTraversalOnKT(KTN_t *R) {
         postOrderTraversalOnKT(child);
         child = child->littleBrother;
     }
-    printf("post-order traversal : %d\n", R->value);
+    printf("post-order traversal : %d\n", R->keyValue);
 }

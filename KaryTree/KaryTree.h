@@ -12,7 +12,7 @@ typedef enum KTOption {
 } KT_OPTION_e;
 
 typedef struct KaryTree_Node {
-    int value;
+    int keyValue;
     void *element;
     int numOfChild;
     struct KaryTree_Node *parent;       // for Breadth-First Find
@@ -24,7 +24,7 @@ typedef struct KaryTree_Node {
 //////////////////////////////////////////////////
 KTN_t *createNode(int value, void *element);
 bool destroyKT(KTN_t *R, KT_OPTION_e option);
-KTN_t *insertElementIntoKT(KTN_t *R, int K, int value, void *element);
+KTN_t *insertElementIntoKT(KTN_t *R, int K, int keyValue, void *element);
 bool deleteElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element);
 int findElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option);
 KTN_t *findNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option);
