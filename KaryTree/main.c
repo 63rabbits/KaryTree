@@ -17,7 +17,9 @@ typedef struct Element {
 void test(void);
 Element_t *createElement(int value);
 bool destroyElement(Element_t *element);
-int comp(void *elementA, void *elementB);
+void *levelOrderTraversalOnKTslave(KTN_t *R, void *parameter);
+void *preOrderTraversalOnKTslave(KTN_t *R, void *parameter);
+void *postOrderTraversalOnKTslave(KTN_t *R, void *parameter);
 
 //////////////////////////////////////////////////
 int main(int argc, const char * argv[]) {
@@ -37,14 +39,14 @@ int main(int argc, const char * argv[]) {
 void test() {
     int K = 3;
     int numOfNode = 10;
-    int findValue = 5;
-    int deleteValue = 2;
+    int findKey = 5;
+    int deleteKey = 2;
     
     Element_t *element = NULL;
     KTN_t *root = NULL;
     for (int i=0; i<numOfNode; i++) {
         element = createElement(i);
-        root = insertElementIntoKT(root, K, element->value, element);
+        root = insertElementOnKT(root, K, element->value, element);
         if (root == NULL) {
             printf("error [%s] : could not insert %d.\n", __func__, i);
             return;
@@ -52,39 +54,33 @@ void test() {
     }
     
     printf("*** level-order traversal ***\n");
-    levelOrderTraversalOnKT(root);
-
+    levelOrderTraversalOnKT(root, levelOrderTraversalOnKTslave, NULL);
+    
     printf("*** pre-order traversal ***\n");
-    preOrderTraversalOnKT(root);
-
+    preOrderTraversalOnKT(root, preOrderTraversalOnKTslave, NULL);
+    
     printf("*** post-order traversal ***\n");
-    postOrderTraversalOnKT(root);
-
+    postOrderTraversalOnKT(root, postOrderTraversalOnKTslave, NULL);
+    
     printf("*** breadth first find ***\n");
-    element = createElement(findValue);
-    int value = findElementOnKT(root, comp, element, KT_OPTION_BREADTH_FIRST_SEARCH);
-    printf("breadth first find %d [%s] : found value = %d\n", element->value, __func__, value);
-    destroyElement(element);
-
+    Element_t *element1 = findElementOnKT(root, findKey, KT_OPTION_BREADTH_FIRST_SEARCH);
+    printf("breadth first find keyValue %d [%s] : found value = %d\n", findKey, __func__, element1->value);
+    
     printf("*** depth first find ***\n");
-    element = createElement(findValue);
-    value = findElementOnKT(root, comp, element, KT_OPTION_DEPTH_FIRST_SEARCH);
-    printf("depth first find %d [%s] : found value = %d\n", element->value, __func__, value);
-    destroyElement(element);
-
+    Element_t *element2 = findElementOnKT(root, findKey, KT_OPTION_DEPTH_FIRST_SEARCH);
+    printf("depth first find keyValue %d [%s] : found value = %d\n", findKey, __func__, element2->value);
+    
     printf("*** delete ***\n");
-    element = createElement(deleteValue);
-    bool check = deleteElementOnKT(root, comp, element);
+    bool check = deleteElementOnKT(root, deleteKey);
     if (check) {
-        printf("delete value %d [%s] : success.\n", deleteValue, __func__);
+        printf("delete keyValue %d [%s] : success.\n", deleteKey, __func__);
     }
     else {
-        printf("error [%s] : could not delete value %d.\n", __func__, deleteValue);
+        printf("error [%s] : could not delete keyValue %d.\n", __func__, deleteKey);
     }
-    destroyElement(element);
-
+    
     printf("*** level-order traversal ***\n");
-    levelOrderTraversalOnKT(root);
+    levelOrderTraversalOnKT(root, levelOrderTraversalOnKTslave, NULL);
     
     destroyKT(root, KT_OPTION_WITH_ELEMENT);
 }
@@ -104,8 +100,24 @@ bool destroyElement(Element_t *element) {
     return true;
 }
 
-int comp(void *elementA, void *elementB) {
-    int valueA = ((Element_t *)elementA)->value;
-    int valueB = ((Element_t *)elementB)->value;
-    return valueA - valueB;
+void *levelOrderTraversalOnKTslave(KTN_t *R, void *parameter) {
+    Element_t *element = getElementOnKT(R);
+    
+    printf("level-order traversal : %d\n", element->value);
+    return NULL;    // none stop.
 }
+
+void *preOrderTraversalOnKTslave(KTN_t *R, void *parameter) {
+    Element_t *element = getElementOnKT(R);
+    
+    printf("pre-order traversal : %d\n", element->value);
+    return NULL;    // none stop.
+}
+
+void *postOrderTraversalOnKTslave(KTN_t *R, void *parameter) {
+    Element_t *element = getElementOnKT(R);
+    
+    printf("post-order traversal : %d\n", element->value);
+    return NULL;    // none stop.
+}
+

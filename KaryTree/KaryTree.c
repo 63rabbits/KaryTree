@@ -7,7 +7,145 @@
 #include "KaryTree.h"
 
 //////////////////////////////////////////////////
-KTN_t *createNode(int keyValue, void *element) {
+//  private
+KTN_t *createNodeKT(int value, int K, void *element);
+KTN_t *findNodeOnKT(KTN_t *R, int keyValue, KT_OPTION_e option);
+KTN_t *findLeftmostLeefNodeOnKT(KTN_t *R);
+void *insertElementOnKTslave(KTN_t *R, void *child);
+void *destroyNodeKTslave(KTN_t *R, void *option);
+void *findNodeOnKTslave(KTN_t *R, void *option);
+
+//////////////////////////////////////////////////
+//  public
+bool destroyKT(KTN_t *R, KT_OPTION_e option) {
+    // Block illegal parameters
+    if (R == NULL) return false;
+    
+    // Detach from the tree.
+    if (R->parent != NULL) {
+        if (R->bigBrother == NULL) {    // Eldest son
+            R->parent->child = R->littleBrother;
+        }
+        else {
+            R->bigBrother->littleBrother = R->littleBrother;
+            R->littleBrother->bigBrother = R->bigBrother;
+        }
+        R->parent->numSpawning++;
+    }
+
+    preOrderTraversalOnKT(R, destroyNodeKTslave, &option);
+    
+    return true;
+}
+
+KTN_t *insertElementOnKT(KTN_t *R, int K, int keyValue, void *element) {
+    // Block illegal parameters.
+    if (element == NULL) return NULL;
+    
+    KTN_t *node = createNodeKT(keyValue, K, element);
+    if (node == NULL) return NULL;
+    if (R == NULL) return node;
+    levelOrderTraversalOnKT(R, insertElementOnKTslave, node);
+    
+    return R;
+}
+
+bool deleteElementOnKT(KTN_t *R, int keyValue) {
+    // Block illegal parameters.
+    if (R == NULL) return false;
+    
+    //    Consider a subtree rooted at the node to be deleted.
+    //    Replace the deletion node with the leftmost leaf of the subtree.
+    KTN_t *target = findNodeOnKT(R, keyValue, KT_OPTION_BREADTH_FIRST_SEARCH);
+    if (target == NULL) return false;
+    KTN_t *leftmost = findLeftmostLeefNodeOnKT(target);
+    
+    // change a value and element of target node. then delete a leftmost node.
+    target->keyValue = leftmost->keyValue;
+    free(target->element);
+    target->element = leftmost->element;
+    if ((leftmost->parent != NULL) &&
+        (leftmost->parent->child == leftmost)) {
+        leftmost->parent->child = leftmost->littleBrother;
+    }
+    destroyKT(leftmost, KT_OPTION_NONE);
+    
+    return true;
+}
+
+void *findElementOnKT(KTN_t *R, int keyValue, KT_OPTION_e option) {
+    KTN_t *findNode = findNodeOnKT(R, keyValue, option);
+    if (findNode == NULL) return NULL;
+    return findNode->element;
+}
+
+void *levelOrderTraversalOnKT(KTN_t *R, void *(*func)(KTN_t*, void*), void *parameter) {
+    // Block illegal paramaters.
+    if (R == NULL) return false;
+    
+    QUEUE_t *Q = createQueue();
+    enQueue(Q, R);
+    while (true) {
+        KTN_t *node = deQueue(Q);
+        if (node == NULL) break;
+        
+        void *p = func(node, parameter);
+        if (p != NULL) {
+            destroyQueue(Q, QUEUE_OPTION_NONE);
+            return p;
+        }
+        KTN_t *child = node->child;
+        while (child != NULL) {
+            enQueue(Q, child);
+            child = child->littleBrother;
+        }
+    }
+    destroyQueue(Q, QUEUE_OPTION_NONE);
+    return NULL;
+}
+
+void *preOrderTraversalOnKT(KTN_t *R, void *(*func)(KTN_t*, void*), void *parameter) {
+    if (R == NULL) return NULL;
+    
+    void *p = NULL;
+    p = func(R, parameter);
+    if (p != NULL) return p;
+    KTN_t *child = R->child;
+    while (child != NULL) {
+        p = preOrderTraversalOnKT(child, func, parameter);
+        if (p != NULL) return p;
+        child = child->littleBrother;
+    }
+    
+    return NULL;
+}
+
+void *postOrderTraversalOnKT(KTN_t *R, void *(*func)(KTN_t*, void*), void *parameter) {
+    if (R == NULL) return NULL;
+    
+    void *p = NULL;
+    KTN_t *child = R->child;
+    while (child != NULL) {
+        p = postOrderTraversalOnKT(child, func, parameter);
+        if (p != NULL) return p;
+        child = child->littleBrother;
+    }
+    p = func(R, parameter);
+    if (p != NULL) return p;
+    
+    return NULL;
+}
+
+void *getElementOnKT(KTN_t *R) {
+    // Block illegal parameters.
+    if (R == NULL) return NULL;
+    
+    return R->element;
+}
+
+//////////////////////////////////////////////////
+//  private
+KTN_t *createNodeKT(int keyValue, int K, void *element) {
     // Block illegal parameters.
     if (element == NULL) return NULL;
     
@@ -15,7 +153,7 @@ KTN_t *createNode(int keyValue, void *element) {
     if (node == NULL) return NULL;
     node->keyValue = keyValue;
     node->element = element;
-    node->numOfChild = 0;
+    node->numSpawning = K;
     node->parent = NULL;
     node->bigBrother = NULL;
     node->littleBrother = NULL;
@@ -24,80 +162,26 @@ KTN_t *createNode(int keyValue, void *element) {
     return node;
 }
 
-bool destroyKT(KTN_t *R, KT_OPTION_e option) {
-    // Block illegal parameters
-    if (R == NULL) return false;
-    
-    // post-order traversal.
-    destroyKT(R->child, option);
-    destroyKT(R->littleBrother, option);
-    if ((option == KT_OPTION_WITH_ELEMENT) &&
-        (R->element != NULL)) {
-        free(R->element);
-    }
-    free(R);
-    
-    return true;
-}
-
-KTN_t *insertElementIntoKT(KTN_t *R, int K, int keyValue, void *element) {
-    KTN_t *target = createNode(keyValue, element);
-    if (target == NULL) return NULL;
-    if (R == NULL) return target;
-    
-    //　level-order traversal.
-    QUEUE_t *Q = createQueue();
-    enQueue(Q, R);
-    while (!isEmptyQueue(Q)) {
-        KTN_t *parent = deQueue(Q);
-        
-        if (parent->numOfChild >= K) {
-            // enqueue all brothers.
-            KTN_t *littleBrother = parent->child;
-            while (littleBrother != NULL) {
-                enQueue(Q, littleBrother);
-                littleBrother = littleBrother->littleBrother;
-            }
-        }
-        else {
-            // search empty child. then register a node.
-            KTN_t *bigBrother = NULL;
-            KTN_t *littleBrother = parent->child;
-            while (true) {
-                if (littleBrother == NULL) break;
-                enQueue(Q, littleBrother);
-                bigBrother = littleBrother;
-                littleBrother = bigBrother->littleBrother;
-            }
-            parent->numOfChild++;
-            target->parent = parent;
-            if (bigBrother == NULL) {
-                parent->child = target;
-            }
-            else {
-                bigBrother->littleBrother = target;
-                target->bigBrother = bigBrother;
-            }
+KTN_t *findNodeOnKT(KTN_t *R, int keyValue, KT_OPTION_e option) {
+    KTN_t *node = NULL;
+    switch (option) {
+        case KT_OPTION_BREADTH_FIRST_SEARCH:
+            node = levelOrderTraversalOnKT(R, findNodeOnKTslave, &keyValue);
+            if (node != NULL) return node;
             break;
-        }
+        case KT_OPTION_DEPTH_FIRST_SEARCH:
+            node = preOrderTraversalOnKT(R, findNodeOnKTslave, &keyValue);
+            if (node != NULL) return node;
+            break;
+        default:
+            break;
     }
-    destroyQueue(Q, QUEUE_OPTION_NONE);
-    
-    return R;
+    return NULL;
 }
 
-bool deleteElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
-    // Block illegal parameters.
-    if (R == NULL) return false;
-    
-    //    Consider a subtree rooted at the node to be deleted.
-    //    Replace the deletion node with the leftmost leaf of the subtree.
-    KTN_t *target = findNodeOnKT(R, comp, element, KT_OPTION_BREADTH_FIRST_SEARCH);
-    if (target == NULL) return false;
-    
-    // find leftmost-leaf
+KTN_t *findLeftmostLeefNodeOnKT(KTN_t *R) {
     KTN_t *parent = NULL;
-    KTN_t *leftmost = target;
+    KTN_t *leftmost = R;
     while (true) {
         if (leftmost->child != NULL) {
             parent = leftmost;
@@ -106,141 +190,53 @@ bool deleteElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
         }
         break;
     }
-    
-    // change a value of target node. then delete a leftmost node.
-    target->keyValue = leftmost->keyValue;
-    if (leftmost->parent != NULL) {
-        leftmost->parent->numOfChild--;
-        if (leftmost == target) {
-            if (target->bigBrother == NULL) {
-                target->parent->child = target->littleBrother;
-                if (target->littleBrother != NULL) {
-                    target->littleBrother->bigBrother = NULL;
-                }
-            }
-            else {
-                target->bigBrother->littleBrother = target->littleBrother;
-                if (target->littleBrother != NULL) {
-                    target->littleBrother->bigBrother = target->bigBrother;
-                }
-            }
-        }
-        else {
-            leftmost->parent->child = leftmost->littleBrother;
-            if (leftmost->littleBrother != NULL) {
-                leftmost->littleBrother->bigBrother = NULL;
-            }
-        }
-    }
-    leftmost->littleBrother = NULL; // for destroy.
-    destroyKT(leftmost, KT_OPTION_WITH_ELEMENT);
-    
-    return true;
+    return leftmost;
 }
 
-int findElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option) {
-    KTN_t *findNode = findNodeOnKT(R, comp, element, option);
-    if (findNode == NULL) return -1;
-    return findNode->keyValue;
-}
-
-KTN_t *findNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element, KT_OPTION_e option) {
-    switch (option) {
-        case KT_OPTION_BREADTH_FIRST_SEARCH:
-            return breadthFirstFindNodeOnKT(R, comp, element);
-        case KT_OPTION_DEPTH_FIRST_SEARCH:
-            return depthFirstFindNodeOnKT(R, comp, element);
-        default:
-            break;
-    }
-    return NULL;
-}
-
-int breadthFirstFindElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
-    KTN_t *findNode = breadthFirstFindNodeOnKT(R, comp, element);
-    if (findNode == NULL) return -1;
-    return findNode->keyValue;
-}
-
-KTN_t *breadthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
-    // Block illegal parameters.
+void *insertElementOnKTslave(KTN_t *R, void *parameter) {
     if (R == NULL) return NULL;
-    //　level-order traversal.
-    KTN_t *findNode = NULL;
-    QUEUE_t *Q = createQueue();
-    enQueue(Q, R);
-    while (!isEmptyQueue(Q)) {
-        KTN_t * node = deQueue(Q);
-        if (comp(node, element) == 0) {
-            findNode = node;
-            break;
-        }
-        
-        // enqueue all childes.
-        KTN_t *child = node->child;
-        while (child != NULL) {
-            enQueue(Q, child);
-            child = child->littleBrother;
-        }
+    if (R->numSpawning <= 0) return NULL;
+    
+    KTN_t *parent = R;
+    KTN_t *child = parameter;
+    KTN_t *son = parent->child;
+    if (son == NULL) {
+        child->parent = parent;
+        parent->child = child;
     }
-    destroyQueue(Q, QUEUE_OPTION_NONE);
-    return findNode;
-}
-int depthFirstFindElementOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
-    KTN_t *findNode = depthFirstFindNodeOnKT(R, comp, element);
-    if (findNode == NULL) return -1;
-    return findNode->keyValue;
+    else {
+        KTN_t *lastBrother = son;
+        while (son != NULL) {
+            lastBrother = son;
+            son = son->littleBrother;
+        }
+        child->parent = parent;
+        child->bigBrother = lastBrother;
+        lastBrother->littleBrother = child;
+    }
+    parent->numSpawning--;
+    
+    return child;
 }
 
-KTN_t *depthFirstFindNodeOnKT(KTN_t *R, int (*comp)(void*, void*), void *element) {
+void *destroyNodeKTslave(KTN_t *R, void *parameter) {
     // Block illegal parameters.
     if (R == NULL) return NULL;
     
-    if (comp(R->element, element) == 0) return R;
-    KTN_t *child = R->child;
-    while (child != NULL) {
-        KTN_t *node = depthFirstFindNodeOnKT(child, comp, element);
-        if (node != NULL) return node;
-        child = child->littleBrother;
+    int option = *((int *)parameter);
+    if ((option == KT_OPTION_WITH_ELEMENT) &&
+        (R->element != NULL)) {
+        free(R->element);
     }
+    free(R);
+    
     return NULL;
 }
 
-void levelOrderTraversalOnKT(KTN_t *R) {
-    QUEUE_t *Q = createQueue();
-    enQueue(Q, R);
-    while (!isEmptyQueue(Q)) {
-        KTN_t * node = deQueue(Q);
-        printf("level-order traversal : %d\n", node->keyValue);
-        
-        // enqueue all childs.
-        KTN_t *child = node->child;
-        while (child != NULL) {
-            enQueue(Q, child);
-            child = child->littleBrother;
-        }
-    }
-    destroyQueue(Q, QUEUE_OPTION_WITH_ELEMENT);
-}
-
-void preOrderTraversalOnKT(KTN_t *R) {
-    if (R == NULL) return;
+void *findNodeOnKTslave(KTN_t *R, void *parameter) {
+    // Block illegal parameters.
+    if (R == NULL) return NULL;
     
-    printf("pre-order traversal : %d\n", R->keyValue);
-    KTN_t *child = R->child;
-    while (child != NULL) {
-        preOrderTraversalOnKT(child);
-        child = child->littleBrother;
-    }
-}
-
-void postOrderTraversalOnKT(KTN_t *R) {
-    if (R == NULL) return;
-    
-    KTN_t *child = R->child;
-    while (child != NULL) {
-        postOrderTraversalOnKT(child);
-        child = child->littleBrother;
-    }
-    printf("post-order traversal : %d\n", R->keyValue);
+    if (R->keyValue == *((int*)parameter)) return R;
+    return NULL;
 }
