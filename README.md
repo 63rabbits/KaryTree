@@ -1,5 +1,5 @@
 # KaryTree
 
-K-ary Tree
+K-ary Tree.
 
 ![KaryTree](/K-ary-tree-000.png)
